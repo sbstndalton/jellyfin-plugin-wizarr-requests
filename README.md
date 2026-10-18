@@ -21,6 +21,18 @@ Submitting a request creates no Jellyfin account. Declining one creates no invit
 
 Requirements: Jellyfin **12.2.0**, Wizarr with its `/api/invitations` API, and a Wizarr API key. The server must be able to reach Wizarr’s API, and guests must be able to open its public HTTPS invitation links. An owner-only reverse-proxy login in front of Wizarr will block guests.
 
+### Jellyfin plugin catalog
+
+Add this third-party repository under **Dashboard → Plugins → Repositories**:
+
+```text
+https://raw.githubusercontent.com/sbstndalton/jellyfin-plugin-wizarr-requests/main/manifest.json
+```
+
+Then install **Wizarr Requests** from the catalog, restart when playback is idle, and follow configuration steps 4–6 below. This repository currently distributes the **preview release**.
+
+### Manual installation
+
 1. Download the plugin ZIP from [Releases](https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases).
 2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.0.0.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
 3. Restart Jellyfin when nobody is playing media.

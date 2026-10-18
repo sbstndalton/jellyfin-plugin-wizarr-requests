@@ -1,0 +1,20 @@
+[
+  {
+    "guid": "e5730687-b31f-4fc3-9bbb-322151b57917",
+    "name": "Wizarr Requests",
+    "overview": "Request access, review profiles, and approve single-use Wizarr invitations.",
+    "description": "Preview: a browser profile wizard and administrator-only approval queue. Requires Jellyfin 12.2.0 and Wizarr's invitation API. Requests are disabled until configured.",
+    "owner": "sbstndalton",
+    "category": "General",
+    "versions": [
+      {
+        "version": "1.0.0.0",
+        "changelog": "First public preview. Profile requests, private status links, administrator approval/decline, single-use seven-day Wizarr invitations. No email/push delivery or native Helmarr approval queue.",
+        "targetAbi": "12.2.0.0",
+        "sourceUrl": "https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases/download/v1.0.0-rc.1/Wizarr-Requests-1.0.0.0.zip",
+        "checksum": "480b9024e02662b9e1c36f1581acb9b1",
+        "timestamp": "2026-10-18T16:00:00Z"
+      }
+    ]
+  }
+]
