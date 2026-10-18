@@ -23,6 +23,10 @@
       <p>Uses the exact Jellyfin user ID, including deletions from Jellyfin’s dashboard. Seerr also removes that account’s requests. Its owner account is protected. Failed cleanup is queued for retry; identity conflicts require manual review.</p>
       <div class="inputContainer"><label class="inputLabel" for="wrSeerrUrl">Seerr API URL</label><input is="emby-input" id="wrSeerrUrl" type="url"></div>
       <div class="inputContainer"><label class="inputLabel" for="wrSeerrKey">Seerr API key</label><input is="emby-input" id="wrSeerrKey" type="password" autocomplete="off"></div>
+      <h2>Seerr link sign-in</h2>
+      <label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" id="wrSeerrHandoff"><span>Use Jellyfin Quick Connect when opening Seerr links</span></label>
+      <div class="inputContainer"><label class="inputLabel" for="wrSeerrPublic">Public Seerr URL (HTTPS)</label><input is="emby-input" id="wrSeerrPublic" type="url"></div>
+      <p>Requires File Transformation, Jellyfin Quick Connect, and the companion static page installed on Seerr. Links open a new tab and sign in as the current Jellyfin profile. No Jellyfin token is sent in the URL. Enable only after installing the companion with this server’s exact public origin.</p>
       <button is="emby-button" class="raised button-submit block emby-button" type="submit">Save settings</button>
     </form></details>
   </div></div>
@@ -69,14 +73,14 @@
       }catch{notify('Unable to load requests. Sign in with a Jellyfin administrator account and try again.');}
     }
     page.addEventListener('pageshow',async()=>{
-      try{const c=await ApiClient.getPluginConfiguration(pluginId);$('wrEnabled').checked=c.Enabled;$('wrPrefill').checked=!!c.PrefillUsername;$('wrSeerrCleanup').checked=!!c.SeerrCleanupEnabled;$('wrSeerrUrl').value=c.SeerrApiUrl||'';$('wrSeerrKey').value=c.SeerrApiKey||'';
+      try{const c=await ApiClient.getPluginConfiguration(pluginId);$('wrEnabled').checked=c.Enabled;$('wrPrefill').checked=!!c.PrefillUsername;$('wrSeerrHandoff').checked=!!c.SeerrHandoffEnabled;$('wrSeerrPublic').value=c.SeerrPublicUrl||'';$('wrSeerrCleanup').checked=!!c.SeerrCleanupEnabled;$('wrSeerrUrl').value=c.SeerrApiUrl||'';$('wrSeerrKey').value=c.SeerrApiKey||'';
         for(const [id,key] of [['wrServerName','ServerName'],['wrApiUrl','WizarrApiUrl'],['wrPublicUrl','WizarrPublicUrl'],['wrKey','WizarrApiKey'],['wrServerId','ServerId']])$(id).value=c[key];
         $('wrLibraries').value=(c.LibraryIds||[]).join(','); await refresh();
       }catch{notify('Unable to load settings. An administrator login is required.');}
     });
     $('wrRefresh').addEventListener('click',refresh);
     $('wrSettings').addEventListener('submit',async e=>{e.preventDefault();
-      try{const c=await ApiClient.getPluginConfiguration(pluginId);c.Enabled=$('wrEnabled').checked;c.PrefillUsername=$('wrPrefill').checked;c.SeerrCleanupEnabled=$('wrSeerrCleanup').checked;c.SeerrApiUrl=$('wrSeerrUrl').value.trim();c.SeerrApiKey=$('wrSeerrKey').value.trim();
+      try{const c=await ApiClient.getPluginConfiguration(pluginId);c.Enabled=$('wrEnabled').checked;c.PrefillUsername=$('wrPrefill').checked;c.SeerrHandoffEnabled=$('wrSeerrHandoff').checked;c.SeerrPublicUrl=$('wrSeerrPublic').value.trim();c.SeerrCleanupEnabled=$('wrSeerrCleanup').checked;c.SeerrApiUrl=$('wrSeerrUrl').value.trim();c.SeerrApiKey=$('wrSeerrKey').value.trim();
         for(const [id,key] of [['wrServerName','ServerName'],['wrApiUrl','WizarrApiUrl'],['wrPublicUrl','WizarrPublicUrl'],['wrKey','WizarrApiKey']])c[key]=$(id).value.trim();
         c.ServerId=Number($('wrServerId').value);c.LibraryIds=$('wrLibraries').value.split(',').map(x=>Number(x.trim()));
         if(!c.LibraryIds.length||c.LibraryIds.some(x=>!Number.isInteger(x)||x<1))throw Error('Invalid libraries');

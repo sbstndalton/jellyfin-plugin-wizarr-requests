@@ -1,0 +1,44 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync(new URL('../Web/seerr-handoff.js',import.meta.url),'utf8');
+let count=0;
+const check=(condition,label)=>{assert.ok(condition,label);console.log('PASS '+label);count++};
+const events={},docEvents={},sent=[],authorizations=[];
+let opened=0,locationOpened;
+const child={postMessage:(...x)=>sent.push(x)};
+const client={getCurrentUserId:()=> 'synthetic-user',accessToken:()=> 'synthetic-never-export-this',getUrl:(p,q)=>'https://jellyfin.example.invalid/'+p+'?code='+q.code,ajax:async x=>authorizations.push(x)};
+const win={ApiClient:client,open:url=>{opened++;locationOpened=url;return child},addEventListener:(n,f)=>events[n]=f};
+const context={window:win,document:{currentScript:{src:'https://jellyfin.example.invalid/WizarrRequests/seerr-handoff.js'},addEventListener:(n,f)=>docEvents[n]=f},fetch:async()=>({ok:true,json:async()=>({enabled:true,url:'https://seerr.example.invalid'})}),URL,URLSearchParams,crypto:globalThis.crypto,setTimeout:()=>1,clearTimeout(){},Uint8Array};
+vm.runInNewContext(source,context);await new Promise(r=>setImmediate(r));
+function click(url){let prevented=false;docEvents.click({target:{closest:()=>({href:url})},button:0,preventDefault(){prevented=true},stopImmediatePropagation(){}});return prevented;}
+check(!click('https://other.example.invalid/movie/1')&&opened===0,'unrelated destinations remain normal links');
+check(click('https://seerr.example.invalid/movie/42?x=1')&&opened===1,'Seerr link opens the companion handoff');
+check(!locationOpened.includes('synthetic-never-export-this')&&!locationOpened.includes('token'),'no Jellyfin bearer token is exported in URL');
+const nonce=new URLSearchParams(new URL(locationOpened).hash.slice(1)).get('nonce');
+const message={type:'wizarr-seerr-quickconnect',nonce,code:'123456'};
+await events.message({origin:'https://evil.example.invalid',source:child,data:message});
+await events.message({origin:'https://seerr.example.invalid',source:{},data:message});
+await events.message({origin:'https://seerr.example.invalid',source:child,data:{...message,nonce:'forged'}});
+check(authorizations.length===0,'forged origin, window and nonce cannot authorize');
+await events.message({origin:'https://seerr.example.invalid',source:child,data:message});
+check(authorizations.length===1&&sent[0][0].type==='wizarr-seerr-authorized','matching tab authorizes once through Jellyfin native API');
+await events.message({origin:'https://seerr.example.invalid',source:child,data:message});
+check(authorizations.length===1,'replayed message cannot authorize again');
+click('https://seerr.example.invalid/tv/43');const nonce2=new URLSearchParams(new URL(locationOpened).hash.slice(1)).get('nonce');client.getCurrentUserId=()=> 'different-user';
+await events.message({origin:'https://seerr.example.invalid',source:child,data:{...message,nonce:nonce2}});
+check(authorizations.length===1&&sent.at(-1)[0].type==='wizarr-seerr-failed','profile switch during handoff fails closed');
+const receiver=fs.readFileSync(new URL('../Companion/seerr-handoff/handoff.js',import.meta.url),'utf8');
+function receiverContext(destination='/movie/42?x=1'){
+ const state={calls:[],redirect:null,listener:null,status:{},manual:{hidden:true}};const opener={postMessage:data=>state.message=data};
+ const window={opener,WizarrJellyfinOrigin:'https://jellyfin.example.invalid',addEventListener:(_,f)=>state.listener=f};
+ const c={window,document:{getElementById:id=>id==='status'?state.status:state.manual,cookie:''},location:{hash:'#'+new URLSearchParams({nonce:'a'.repeat(48),return:destination}),origin:'https://seerr.example.invalid',pathname:'/jellyfin-handoff/index.html',replace:url=>state.redirect=url},history:{replaceState(){}},URL,URLSearchParams,setTimeout:()=>1,clearTimeout(){},fetch:async (url,opts)=>{state.calls.push({url,body:JSON.parse(opts.body)});return {ok:true,json:async()=>({code:'123456',secret:'a1'.repeat(32)})}}};
+ vm.runInNewContext(receiver,c);return {state,opener};
+}
+const invalid=receiverContext('//evil.example.invalid/');check(invalid.state.calls.length===0&&!invalid.state.manual.hidden,'off-origin return URL rejected before authentication');
+const valid=receiverContext();await new Promise(r=>setImmediate(r));
+await valid.state.listener({origin:'https://evil.example.invalid',source:valid.opener,data:{type:'wizarr-seerr-authorized',nonce:'a'.repeat(48)}});
+check(valid.state.calls.length===1,'receiver ignores authorization from wrong origin');
+await valid.state.listener({origin:'https://jellyfin.example.invalid',source:valid.opener,data:{type:'wizarr-seerr-authorized',nonce:'a'.repeat(48)}});
+check(valid.state.calls.length===2&&valid.state.calls[1].url.endsWith('/quickconnect/authenticate')&&valid.state.redirect==='https://seerr.example.invalid/movie/42?x=1','native Seerr authentication preserves requested destination');
+console.log(`${count} browser handoff checks passed.`);

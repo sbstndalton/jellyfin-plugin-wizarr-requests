@@ -34,7 +34,7 @@ Then install **Wizarr Requests** from the catalog, restart when playback is idle
 ### Manual installation
 
 1. Download the plugin ZIP from [Releases](https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases).
-2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.1.0.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
+2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.2.0.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
 3. Restart Jellyfin when nobody is playing media.
 4. Open **Dashboard → Plugins → Wizarr Requests** and expand **Connection settings**.
 5. Set your display name, internal Wizarr API URL, public HTTPS Wizarr URL, Wizarr API key, server ID and explicit comma-separated Wizarr library IDs. Wizarr’s authenticated `GET /api/servers` and `GET /api/libraries` endpoints provide those IDs.
@@ -113,3 +113,17 @@ The source follows Jellyfin’s plugin/controller model and Wizarr’s invitatio
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
+
+### Optional Jellyfin → Seerr link sign-in
+
+Version 1.2 adds a browser handoff using **native Jellyfin Quick Connect and native Seerr authentication**. It does not fork either server, send a Jellyfin bearer token to Seerr, put credentials in a link, or share cookies across subdomains.
+
+Install the files in `Companion/seerr-handoff/` as `/jellyfin-handoff/` on the **same origin as Seerr**. In a Seerr Docker installation, mount that directory read-only at `/app/public/jellyfin-handoff` and restart Seerr so Next.js discovers the public files. Set `config.js` to the exact public Jellyfin origin, including HTTPS and any non-default port but no trailing slash or path. Persist the mount in your container manager. The upstream Seerr image remains unchanged.
+
+Enable Quick Connect in Jellyfin, install the compatible File Transformation plugin, then enable **Seerr link sign-in** and enter the public HTTPS Seerr URL in this plugin's settings. Restart Jellyfin after installing the plugin update; later setting changes take effect after a web refresh. The feature defaults off.
+
+An external Seerr link opens a new tab. That tab initiates native Quick Connect; the original Jellyfin tab authorizes the temporary code as the current signed-in profile. Seerr creates its regular session and opens the original destination. The exchange checks the exact site origin, tab, random nonce and unchanged Jellyfin identity. Native Seerr permissions and imported-user policies still apply. Internal Enhanced detail modals and already-handled links retain their existing behavior. Do not install another site's copy of the companion configuration.
+
+Keep the source Jellyfin tab open during sign-in. Browser popup/opener restrictions, a separate native client, or an independently hosted web shell can prevent the handoff; the companion offers ordinary sign-in on failure. This is a small plugin-and-static-page integration, not a promise of compatibility with every future server release.
+
+Validation includes 43 .NET integration checks, 10 browser-protocol checks, isolated native plugin/script loading and Seerr static-page hosting, and a desktop browser handoff through the native Quick Connect endpoint.

@@ -1,0 +1,1 @@
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101216;color:#f3f5f7}body{margin:0;padding:2rem;display:grid;min-height:80vh;place-items:center}main{max-width:32rem}h1{font-size:1.75rem}p{line-height:1.6;color:#b1bac7}a{color:#9db8d5;text-underline-offset:.2em}a:focus-visible{outline:2px solid currentColor;outline-offset:4px}

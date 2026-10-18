@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.2.0.0",
+        "changelog": "Optional browser sign-in for external Seerr links via native Jellyfin Quick Connect. Requires File Transformation and the static Seerr companion. Strict origin/tab/nonce checks; no bearer token in links or server forks. Existing Seerr cleanup and request data preserved.",
+        "targetAbi": "12.2.0.0",
+        "sourceUrl": "https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases/download/v1.2.0-rc.1/Wizarr-Requests-1.2.0.0.zip",
+        "checksum": "fe72fe0e0a1a4891ea149982db0bddb6",
+        "timestamp": "2026-10-18T19:00:00Z"
+      },
+      {
         "version": "1.1.0.0",
         "changelog": "Optional Seerr account cleanup on native Jellyfin user deletion, exact Jellyfin ID matching, owner protection and persistent retries. Seerr deletion also removes associated request records. Disabled until configured.",
         "targetAbi": "12.2.0.0",

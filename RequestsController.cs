@@ -17,6 +17,10 @@ public sealed class RequestsController(RequestStore store, WizarrClient wizarr) 
     public IActionResult Script() => Asset("request.js", "application/javascript; charset=utf-8");
     [AllowAnonymous, HttpGet("style.css")]
     public IActionResult Style() => Asset("style.css", "text/css; charset=utf-8");
+    [AllowAnonymous, HttpGet("seerr-handoff.js")]
+    public IActionResult SeerrScript() => Asset("seerr-handoff.js", "application/javascript; charset=utf-8");
+    [AllowAnonymous, HttpGet("seerr-handoff-config")]
+    public object SeerrConfig() => new { enabled = Plugin.Instance.Configuration.SeerrHandoffEnabled, url = SeerrHandoff.PublicUrl(Plugin.Instance.Configuration.SeerrPublicUrl) };
     [AllowAnonymous, HttpGet("info")]
     public object Info() => new { enabled = Plugin.Instance.Configuration.Enabled, serverName = Plugin.Instance.Configuration.ServerName };
 

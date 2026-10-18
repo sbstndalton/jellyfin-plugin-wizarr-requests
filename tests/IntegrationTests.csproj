@@ -3,7 +3,7 @@
   <ItemGroup>
     <Compile Include="../RequestStore.cs" Link="RequestStore.cs" />
     <Compile Include="../WizarrClient.cs" Link="WizarrClient.cs" />
-    <Compile Include="../SeerrCleanup.cs" Link="SeerrCleanup.cs" />
+    <Compile Include="../SeerrCleanup.cs" Link="SeerrCleanup.cs" /><Compile Include="../SeerrHandoff.cs" Link="SeerrHandoff.cs" />
     <Compile Include="../RequestsController.cs" Link="RequestsController.cs" />
     <PackageReference Include="Jellyfin.Controller" Version="12.2.0" />
     <PackageReference Include="Jellyfin.Model" Version="12.2.0" />

@@ -32,6 +32,8 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public bool SeerrCleanupEnabled { get; set; }
     public string SeerrApiUrl { get; set; } = "";
     public string SeerrApiKey { get; set; } = "";
+    public bool SeerrHandoffEnabled { get; set; }
+    public string SeerrPublicUrl { get; set; } = "";
     public int ServerId { get; set; } = 1;
     public int[] LibraryIds { get; set; } = [];
 }
@@ -47,5 +49,6 @@ public sealed class ServiceRegistrator : IPluginServiceRegistrator
         services.AddSingleton<SeerrCleanupProcessor>();
         services.AddScoped<MediaBrowser.Controller.Events.IEventConsumer<Jellyfin.Data.Events.Users.UserDeletedEventArgs>, UserDeletedConsumer>();
         services.AddHostedService<SeerrCleanupWorker>();
+        services.AddHostedService<SeerrHandoffRegistration>();
     }
 }

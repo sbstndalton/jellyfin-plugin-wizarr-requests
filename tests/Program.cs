@@ -135,6 +135,16 @@ try
     File.WriteAllText(Directory.GetFiles(Path.Combine(directory,"seerr-cleanup"),"*.json").First(), "corrupt");
     calls = seerrLookups; await processor.RunOnce(config, _ => false);
     Check(seerrLookups == calls, "corrupt cleanup queue fails closed before any remote deletion");
+    Check(SeerrHandoff.PublicUrl("https://requests.example.invalid/") == "https://requests.example.invalid", "handoff public URL is canonical HTTPS");
+    Check(new[]{"http://requests.example.invalid", "https://name:pass@requests.example.invalid", "https://requests.example.invalid/?token=x", "https://requests.example.invalid/#token"}.All(x => SeerrHandoff.PublicUrl(x) is null), "unsafe handoff public URLs rejected");
+    config.SeerrHandoffEnabled = false; config.SeerrPublicUrl = "https://requests.example.invalid";
+    var original = "<html><body>Jellyfin</body></html>";
+    Check(SeerrHandoff.Transform(new() { Contents = original }) == original, "handoff injection disabled by default");
+    config.SeerrHandoffEnabled = true;
+    var injected = SeerrHandoff.Transform(new() { Contents = original });
+    Check(injected.Contains("data-wizarr-seerr-handoff") && injected.Contains("../WizarrRequests/seerr-handoff.js"), "enabled handoff injects only a same-server client asset");
+    Check(SeerrHandoff.Transform(new() { Contents = injected }) == injected, "handoff injection is idempotent");
+    Check(SeerrHandoff.Transform(new() { Contents = "not an HTML shell" }) == "not an HTML shell", "handoff leaves other content unchanged");
     Console.WriteLine($"{count} checks passed; all data and remote invitations synthetic.");
 }
 finally { await app.StopAsync(); await app.DisposeAsync(); Directory.Delete(directory,true); }

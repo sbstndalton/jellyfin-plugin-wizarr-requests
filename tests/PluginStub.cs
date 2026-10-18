@@ -17,6 +17,8 @@ public sealed class PluginConfiguration
     public bool SeerrCleanupEnabled { get; set; }
     public string SeerrApiUrl { get; set; } = "";
     public string SeerrApiKey { get; set; } = "";
+    public bool SeerrHandoffEnabled { get; set; }
+    public string SeerrPublicUrl { get; set; } = "";
     public int ServerId { get; set; } = 7;
     public int[] LibraryIds { get; set; } = [4, 5];
 }
