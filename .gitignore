@@ -1,0 +1,15 @@
+bin/
+obj/
+tests/bin/
+tests/obj/
+reference/*.dll
+tools/dotnet-install.ps1
+tools/
+dist/
+*.private.*
+.[Cc][Ll][Aa][Uu][Dd][Ee]/
+.[Cc][Oo][Dd][Ee][Xx]/
+.[Aa][Gg][Ee][Nn][Tt][Ss]/
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]
+[Gg][Ee][Mm][Ii][Nn][Ii].[Mm][Dd]

@@ -1,0 +1,24 @@
+name: Build and test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build -c Release
+      - run: dotnet run --project tests/IntegrationTests.csproj -c Release
+      - name: Package plugin
+        run: |
+          mkdir -p dist
+          cp bin/Release/net10.0/Jellyfin.Plugin.WizarrRequests.dll meta.json dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wizarr-Requests-1.0.0.0
+          path: dist/*

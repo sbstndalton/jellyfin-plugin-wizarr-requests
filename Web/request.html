@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Request access</title>
+  <link rel="stylesheet" href="__ROOT__/style.css">
+  <script src="__ROOT__/request.js" defer></script>
+</head>
+<body>
+  <main>
+    <a class="back" href="../web/">Back to sign in</a>
+    <h1 id="heading">Request access</h1>
+    <p class="intro">Tell the server owner a little about yourself. Your request will be reviewed before you can create an account.</p>
+    <p id="message" role="alert" hidden></p>
+    <form id="wizard" novalidate>
+      <p class="progress" id="progress" aria-live="polite">Step 1 of 3 · Your profile</p>
+      <section data-step="0">
+        <h2>Your profile</h2>
+        <label for="name">Your name</label><input id="name" name="name" autocomplete="name" maxlength="80" required>
+        <label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+        <p class="hint">So the owner can recognize and contact you.</p>
+        <label for="username">Desired username</label><input id="username" name="username" autocomplete="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}" required aria-describedby="username-hint">
+        <p id="username-hint" class="hint">3–32 letters, numbers, dots, underscores or hyphens. You’ll confirm your username and choose a password after approval.</p>
+      </section>
+      <section data-step="1" hidden>
+        <h2>A note for the owner</h2>
+        <label for="note">How do you know the owner, and what would you like access to?</label>
+        <textarea id="note" name="note" rows="5" maxlength="600" required></textarea>
+        <p class="hint">Keep it brief. Don’t include a password or other sensitive information.</p>
+      </section>
+      <section data-step="2" hidden>
+        <h2>Review your request</h2>
+        <dl id="review"></dl>
+        <p>You’re asking for access. The owner will review your profile before a personal invitation becomes available.</p>
+      </section>
+      <div class="trap" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      <div class="actions"><button type="button" id="previous" class="secondary" hidden>Back</button><button type="submit" id="next">Continue</button></div>
+    </form>
+    <section id="status-panel" hidden aria-live="polite">
+      <h2 id="status-heading">Request submitted</h2>
+      <p id="status-copy">Your profile is waiting for the owner’s approval. No account or access has been granted.</p>
+      <p id="private-copy">Keep your private status link. Return to this page to check the decision and finish setup after approval.</p>
+      <div class="actions"><button id="copy-status" type="button" class="secondary">Copy private status link</button><button id="refresh" type="button" class="secondary">Check status</button><a id="finish" class="button" rel="noreferrer noopener" target="_blank" hidden>Finish account setup</a></div>
+      <p id="expiry" class="hint"></p>
+      <a id="status-link" class="private-link"></a>
+    </section>
+    <footer>Account access is approved by the server owner. Invitations and account setup are handled by Wizarr.</footer>
+  </main>
+</body>
+</html>

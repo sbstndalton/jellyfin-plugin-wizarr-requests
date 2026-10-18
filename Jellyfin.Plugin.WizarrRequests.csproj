@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <EmbeddedResource Include="Web/*" />
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalJellyfinReferences)' != 'true'">
+    <PackageReference Include="Jellyfin.Controller" Version="12.2.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Jellyfin.Model" Version="12.2.0" ExcludeAssets="runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalJellyfinReferences)' == 'true'">
+    <Reference Include="MediaBrowser.Common"><HintPath>reference/MediaBrowser.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MediaBrowser.Controller"><HintPath>reference/MediaBrowser.Controller.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MediaBrowser.Model"><HintPath>reference/MediaBrowser.Model.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

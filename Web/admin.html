@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><title>Wizarr Requests</title></head><body>
+<div id="wizarrRequestsConfig" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+  <div data-role="content"><div class="content-primary">
+    <h1>Access requests</h1>
+    <p>Review the submitted profile before approving. Email addresses are self-reported. Approval creates one single-use Wizarr invitation, valid for seven days; it does not create an account.</p>
+    <p>Applicants return to their private status link to collect the invitation. You can also copy it here and send it yourself. Approved invitations appear in Wizarr and Helmarr’s Wizarr list.</p>
+    <p id="wrNotice" role="status" aria-live="polite"></p>
+    <button is="emby-button" id="wrRefresh" type="button" class="raised emby-button">Refresh requests</button>
+    <div id="wrQueue"></div>
+    <details><summary><h2>Connection settings</h2></summary>
+    <form id="wrSettings">
+      <label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" id="wrEnabled"><span>Accept new requests</span></label>
+      <div class="inputContainer"><label class="inputLabel" for="wrServerName">Server display name</label><input is="emby-input" id="wrServerName" required maxlength="80"></div>
+      <div class="inputContainer"><label class="inputLabel" for="wrApiUrl">Wizarr API URL</label><input is="emby-input" id="wrApiUrl" type="url" required></div>
+      <div class="inputContainer"><label class="inputLabel" for="wrPublicUrl">Public Wizarr URL</label><input is="emby-input" id="wrPublicUrl" type="url" required></div>
+      <div class="inputContainer"><label class="inputLabel" for="wrKey">Wizarr API key</label><input is="emby-input" id="wrKey" type="password" autocomplete="off" required></div>
+      <div class="inputContainer"><label class="inputLabel" for="wrServerId">Wizarr server ID</label><input is="emby-input" id="wrServerId" type="number" min="1" required></div>
+      <div class="inputContainer"><label class="inputLabel" for="wrLibraries">Allowed Wizarr library IDs (comma-separated)</label><input is="emby-input" id="wrLibraries" required pattern="[0-9]+(\s*,\s*[0-9]+)*"><div class="fieldDescription">An explicit library selection is required. Downloads, live TV and uploads remain disabled.</div></div>
+      <button is="emby-button" class="raised button-submit block emby-button" type="submit">Save settings</button>
+    </form></details>
+  </div></div>
+  <script>
+  (function(){
+    'use strict';
+    const page=document.getElementById('wizarrRequestsConfig');
+    const $=id=>page.querySelector('#'+id);
+    const pluginId='e5730687-b31f-4fc3-9bbb-322151b57917';
+    const notify=text=>{$('wrNotice').textContent=text;};
+    async function api(path,method='GET'){
+      return await ApiClient.ajax({type:method,url:ApiClient.getUrl('WizarrRequests/admin/'+path),dataType:'json'});
+    }
+    async function refresh(){
+      notify('Loading requests…');
+      try{
+        const requests=await api('requests'); $('wrQueue').replaceChildren();
+        const pending=requests.filter(r=>r.status==='pending').length;
+        notify(requests.length?`${pending} pending · ${requests.length} total`:'No requests yet.');
+        for(const r of requests){
+          const section=document.createElement('section');section.style.cssText='margin:2rem 0;padding-bottom:1.5rem;border-bottom:1px solid #647185';
+          const title=document.createElement('h2');title.textContent=r.name+' · '+r.status;section.append(title);
+          for(const text of [r.email,'Desired username: '+r.username,'Requested '+new Date(r.created).toLocaleString(),r.note,r.reviewNote]){
+            if(!text)continue;const p=document.createElement('p');p.textContent=text;p.style.overflowWrap='anywhere';section.append(p);
+          }
+          if(r.status==='pending'){
+            for(const [action,label] of [['approve','Approve and create invitation'],['decline','Decline']]){
+              const button=document.createElement('button');button.type='button';button.className='raised emby-button';button.textContent=label;button.style.marginRight='.8rem';
+              button.addEventListener('click',async()=>{
+                if(!window.confirm(action==='approve'?`Approve ${r.name} (${r.email}) and create a single-use invitation?`:`Decline ${r.name}’s request?`))return;
+                for(const b of section.querySelectorAll('button'))b.disabled=true;
+                try{await api('requests/'+encodeURIComponent(r.id)+'/'+action,'POST');await refresh();}
+                catch{notify('Could not confirm the decision. Refresh the queue; if review is required, inspect Wizarr before retrying.');}
+              });section.append(button);
+            }
+          }
+          if(r.invitationUrl){
+            const link=document.createElement('a');link.textContent='Open invitation';link.href=r.invitationUrl;link.target='_blank';link.rel='noreferrer noopener';section.append(link);
+            const copy=document.createElement('button');copy.type='button';copy.className='raised emby-button';copy.textContent='Copy invitation link';copy.style.marginLeft='.8rem';
+            copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(r.invitationUrl);copy.textContent='Copied';}catch{notify(r.invitationUrl);}});section.append(copy);
+          }
+          $('wrQueue').append(section);
+        }
+      }catch{notify('Unable to load requests. Sign in with a Jellyfin administrator account and try again.');}
+    }
+    page.addEventListener('pageshow',async()=>{
+      try{const c=await ApiClient.getPluginConfiguration(pluginId);$('wrEnabled').checked=c.Enabled;
+        for(const [id,key] of [['wrServerName','ServerName'],['wrApiUrl','WizarrApiUrl'],['wrPublicUrl','WizarrPublicUrl'],['wrKey','WizarrApiKey'],['wrServerId','ServerId']])$(id).value=c[key];
+        $('wrLibraries').value=(c.LibraryIds||[]).join(','); await refresh();
+      }catch{notify('Unable to load settings. An administrator login is required.');}
+    });
+    $('wrRefresh').addEventListener('click',refresh);
+    $('wrSettings').addEventListener('submit',async e=>{e.preventDefault();
+      try{const c=await ApiClient.getPluginConfiguration(pluginId);c.Enabled=$('wrEnabled').checked;
+        for(const [id,key] of [['wrServerName','ServerName'],['wrApiUrl','WizarrApiUrl'],['wrPublicUrl','WizarrPublicUrl'],['wrKey','WizarrApiKey']])c[key]=$(id).value.trim();
+        c.ServerId=Number($('wrServerId').value);c.LibraryIds=$('wrLibraries').value.split(',').map(x=>Number(x.trim()));
+        if(!c.LibraryIds.length||c.LibraryIds.some(x=>!Number.isInteger(x)||x<1))throw Error('Invalid libraries');
+        await ApiClient.updatePluginConfiguration(pluginId,c);notify('Settings saved.');
+      }catch{notify('Unable to save. Check the connection settings and library IDs.');}
+    });
+  })();
+  </script>
+</div></body></html>
