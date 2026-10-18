@@ -48,6 +48,8 @@ Configure the public Jellyfin address in Wizarr’s media server settings. The p
 
 The optional **Prefill username from requested name** setting appends a URL-encoded `username` query parameter to new invitation links. Enable it only when your Wizarr installation supports that parameter. Applicants can edit the resulting username. Standard Wizarr versions may ignore it.
 
+The companion [sbstndalton/Wizarr community fork](https://github.com/sbstndalton/wizarr) supports this parameter. Its [fork guide](https://github.com/sbstndalton/wizarr/blob/main/FORK.md) documents the signup changes, installation, and merging future upstream updates.
+
 Email and password rules on the account creation screen belong to Wizarr. This plugin does not change them; custom Wizarr policy changes must be maintained separately.
 
 ### Add the login link
