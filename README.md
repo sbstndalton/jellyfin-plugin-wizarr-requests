@@ -9,13 +9,13 @@ Visitors fill out a short profile wizard. A Jellyfin administrator reviews the r
 ## The flow
 
 1. On the Jellyfin browser login page, choose **Request access**.
-2. Enter a name, email, desired username and a short note.
+2. Enter your name and a short note.
 3. Submit and save the private status link.
 4. The administrator reviews the profile in **Dashboard → Plugins → Wizarr Requests**.
 5. Approval creates a **single-use Wizarr invitation that expires in seven days**.
 6. The applicant returns to their private status link, opens the invitation, and chooses their password in Wizarr.
 
-Submitting a request creates no Jellyfin account. Declining one creates no invitation. The desired username is a preference; the applicant confirms it during Wizarr setup.
+Submitting a request creates no Jellyfin account. Declining one creates no invitation. The applicant confirms their username during Wizarr setup. Optional name prefill carries the requested name into Wizarr when that installation supports it.
 
 ## Install
 
@@ -34,13 +34,21 @@ Then install **Wizarr Requests** from the catalog, restart when playback is idle
 ### Manual installation
 
 1. Download the plugin ZIP from [Releases](https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases).
-2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.0.0.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
+2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.0.1.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
 3. Restart Jellyfin when nobody is playing media.
 4. Open **Dashboard → Plugins → Wizarr Requests** and expand **Connection settings**.
 5. Set your display name, internal Wizarr API URL, public HTTPS Wizarr URL, Wizarr API key, server ID and explicit comma-separated Wizarr library IDs. Wizarr’s authenticated `GET /api/servers` and `GET /api/libraries` endpoints provide those IDs.
 6. Enable **Accept new requests**, then save.
 
 Requests are disabled by default. The plugin never silently chooses all libraries. Downloads, live TV and uploads are disabled on invitations it creates. No administrator privilege is granted by the plugin.
+
+### Wizarr account setup
+
+Configure the public Jellyfin address in Wizarr’s media server settings. The plugin selects that configured server; applicants do not enter its address.
+
+The optional **Prefill username from requested name** setting appends a URL-encoded `username` query parameter to new invitation links. Enable it only when your Wizarr installation supports that parameter. Applicants can edit the resulting username. Standard Wizarr versions may ignore it.
+
+Email and password rules on the account creation screen belong to Wizarr. This plugin does not change them; custom Wizarr policy changes must be maintained separately.
 
 ### Add the login link
 
@@ -59,7 +67,7 @@ The browser wizard is available at `/WizarrRequests`. Native TV/mobile clients h
 
 Use the plugin’s configuration page while signed in as a Jellyfin administrator. It shows the submitted profile and explicit **Approve and create invitation** / **Decline** actions. Applicants can retrieve approved invitations through the secret private status link. You can also copy the full invitation from the queue and share it yourself.
 
-Email addresses are self-reported, not verified. Confirm the person’s identity before approving. There is no email delivery or phone push notification in this release, so review the queue directly. A bookmark to the plugin configuration page is useful on a phone.
+Confirm the person’s identity before approving. No email address is requested. There is no email delivery or phone push notification in this release, so review the queue directly. A bookmark to the plugin configuration page is useful on a phone.
 
 ### Helmarr
 
@@ -67,11 +75,11 @@ Approved invitations are normal Wizarr invitations and can be managed through He
 
 ## Privacy and failure handling
 
-- The request queue stays in Jellyfin’s plugin data folder. It contains the applicant’s name, email, desired username, note, request time and review result.
+- The request queue stays in Jellyfin’s plugin data folder. It contains the applicant’s name, note, request time and review result. Older records retain their previously submitted fields.
 - Applicants’ passwords are never collected or stored by this plugin.
 - Status secrets are random 256-bit tokens. Only their hashes are stored. The private status URL puts the secret in its fragment, not a query parameter.
-- Public status responses do not return the submitted name, email or note. The admin queue and all decisions require Jellyfin’s administrator authorization policy.
-- Submission throttling limits an address to five requests per day and the whole server to 100 per hour. Duplicate email submissions are limited for 24 hours. A hidden spam field and cross-origin checks are included. This is basic abuse protection, not a CAPTCHA or comprehensive anti-spam service.
+- Public status responses do not return the submitted name or note. The admin queue and all decisions require Jellyfin’s administrator authorization policy.
+- Submission throttling limits an address to five requests per day and the whole server to 100 per hour. An identical name and note from the same address is limited for 24 hours. A hidden spam field and cross-origin checks are included. This is basic abuse protection, not a CAPTCHA or comprehensive anti-spam service.
 - If Wizarr’s response is uncertain, or Jellyfin restarts during approval, the request becomes **review-required**. The plugin does not blindly issue a second invitation. Inspect Wizarr and share any successfully created invitation manually.
 - Requests are retained until the administrator removes the plugin data. No automatic retention cleanup or account revocation is implemented. Back up this directory along with Jellyfin’s configuration.
 

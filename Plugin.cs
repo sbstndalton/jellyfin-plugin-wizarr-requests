@@ -28,6 +28,7 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public string WizarrApiUrl { get; set; } = "";
     public string WizarrPublicUrl { get; set; } = "";
     public string WizarrApiKey { get; set; } = "";
+    public bool PrefillUsername { get; set; }
     public int ServerId { get; set; } = 1;
     public int[] LibraryIds { get; set; } = [];
 }

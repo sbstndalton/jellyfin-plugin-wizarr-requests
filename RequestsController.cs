@@ -41,7 +41,7 @@ public sealed class RequestsController(RequestStore store, WizarrClient wizarr) 
 
     [Authorize(Policy = Policies.RequiresElevation), HttpGet("admin/requests")]
     public IActionResult List() => Handle(() => store.List().Select(r => new {
-        id = r.Id, name = r.Name, email = r.Email, username = r.Username, note = r.Note, status = r.Status,
+        id = r.Id, name = r.Name, note = r.Note, status = r.Status,
         created = r.Created, decided = r.Decided, decidedBy = r.DecidedBy,
         invitationUrl = r.InvitationUrl, invitationExpires = r.InvitationExpires, reviewNote = r.ReviewNote
     }));
@@ -54,13 +54,14 @@ public sealed class RequestsController(RequestStore store, WizarrClient wizarr) 
             CheckOrigin();
             var config = Plugin.Instance.Configuration;
             WizarrClient.Validate(config);
-            store.BeginApproval(id, User.Identity?.Name ?? "Jellyfin administrator");
+            var request = store.BeginApproval(id, User.Identity?.Name ?? "Jellyfin administrator");
             try
             {
                 // Do not use RequestAborted: the persisted decision must finish if the browser leaves.
                 var invite = await wizarr.Create(config, CancellationToken.None);
-                store.CompleteApproval(id, invite.Url, invite.Expires);
-                return Ok(new { invitationUrl = invite.Url, invitationExpires = invite.Expires });
+                var invitationUrl = config.PrefillUsername ? invite.Url + "?username=" + Uri.EscapeDataString(request.Name) : invite.Url;
+                store.CompleteApproval(id, invitationUrl, invite.Expires);
+                return Ok(new { invitationUrl, invitationExpires = invite.Expires });
             }
             catch (Exception)
             {

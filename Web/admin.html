@@ -3,7 +3,7 @@
 <div id="wizarrRequestsConfig" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
   <div data-role="content"><div class="content-primary">
     <h1>Access requests</h1>
-    <p>Review the submitted profile before approving. Email addresses are self-reported. Approval creates one single-use Wizarr invitation, valid for seven days; it does not create an account.</p>
+    <p>Review the name and note before approving. Approval creates one single-use Wizarr invitation, valid for seven days; it does not create an account.</p>
     <p>Applicants return to their private status link to collect the invitation. You can also copy it here and send it yourself. Approved invitations appear in Wizarr and Helmarr’s Wizarr list.</p>
     <p id="wrNotice" role="status" aria-live="polite"></p>
     <button is="emby-button" id="wrRefresh" type="button" class="raised emby-button">Refresh requests</button>
@@ -11,6 +11,7 @@
     <details><summary><h2>Connection settings</h2></summary>
     <form id="wrSettings">
       <label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" id="wrEnabled"><span>Accept new requests</span></label>
+      <label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" id="wrPrefill"><span>Prefill the name in Wizarr (requires username URL parameter support)</span></label>
       <div class="inputContainer"><label class="inputLabel" for="wrServerName">Server display name</label><input is="emby-input" id="wrServerName" required maxlength="80"></div>
       <div class="inputContainer"><label class="inputLabel" for="wrApiUrl">Wizarr API URL</label><input is="emby-input" id="wrApiUrl" type="url" required></div>
       <div class="inputContainer"><label class="inputLabel" for="wrPublicUrl">Public Wizarr URL</label><input is="emby-input" id="wrPublicUrl" type="url" required></div>
@@ -39,14 +40,14 @@
         for(const r of requests){
           const section=document.createElement('section');section.style.cssText='margin:2rem 0;padding-bottom:1.5rem;border-bottom:1px solid #647185';
           const title=document.createElement('h2');title.textContent=r.name+' · '+r.status;section.append(title);
-          for(const text of [r.email,'Desired username: '+r.username,'Requested '+new Date(r.created).toLocaleString(),r.note,r.reviewNote]){
+          for(const text of ['Requested '+new Date(r.created).toLocaleString(),r.note,r.reviewNote]){
             if(!text)continue;const p=document.createElement('p');p.textContent=text;p.style.overflowWrap='anywhere';section.append(p);
           }
           if(r.status==='pending'){
             for(const [action,label] of [['approve','Approve and create invitation'],['decline','Decline']]){
               const button=document.createElement('button');button.type='button';button.className='raised emby-button';button.textContent=label;button.style.marginRight='.8rem';
               button.addEventListener('click',async()=>{
-                if(!window.confirm(action==='approve'?`Approve ${r.name} (${r.email}) and create a single-use invitation?`:`Decline ${r.name}’s request?`))return;
+                if(!window.confirm(action==='approve'?`Approve ${r.name} and create a single-use invitation?`:`Decline ${r.name}’s request?`))return;
                 for(const b of section.querySelectorAll('button'))b.disabled=true;
                 try{await api('requests/'+encodeURIComponent(r.id)+'/'+action,'POST');await refresh();}
                 catch{notify('Could not confirm the decision. Refresh the queue; if review is required, inspect Wizarr before retrying.');}
@@ -63,14 +64,14 @@
       }catch{notify('Unable to load requests. Sign in with a Jellyfin administrator account and try again.');}
     }
     page.addEventListener('pageshow',async()=>{
-      try{const c=await ApiClient.getPluginConfiguration(pluginId);$('wrEnabled').checked=c.Enabled;
+      try{const c=await ApiClient.getPluginConfiguration(pluginId);$('wrEnabled').checked=c.Enabled;$('wrPrefill').checked=!!c.PrefillUsername;
         for(const [id,key] of [['wrServerName','ServerName'],['wrApiUrl','WizarrApiUrl'],['wrPublicUrl','WizarrPublicUrl'],['wrKey','WizarrApiKey'],['wrServerId','ServerId']])$(id).value=c[key];
         $('wrLibraries').value=(c.LibraryIds||[]).join(','); await refresh();
       }catch{notify('Unable to load settings. An administrator login is required.');}
     });
     $('wrRefresh').addEventListener('click',refresh);
     $('wrSettings').addEventListener('submit',async e=>{e.preventDefault();
-      try{const c=await ApiClient.getPluginConfiguration(pluginId);c.Enabled=$('wrEnabled').checked;
+      try{const c=await ApiClient.getPluginConfiguration(pluginId);c.Enabled=$('wrEnabled').checked;c.PrefillUsername=$('wrPrefill').checked;
         for(const [id,key] of [['wrServerName','ServerName'],['wrApiUrl','WizarrApiUrl'],['wrPublicUrl','WizarrPublicUrl'],['wrKey','WizarrApiKey']])c[key]=$(id).value.trim();
         c.ServerId=Number($('wrServerId').value);c.LibraryIds=$('wrLibraries').value.split(',').map(x=>Number(x.trim()));
         if(!c.LibraryIds.length||c.LibraryIds.some(x=>!Number.isInteger(x)||x<1))throw Error('Invalid libraries');

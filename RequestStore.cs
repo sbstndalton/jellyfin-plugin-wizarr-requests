@@ -1,8 +1,6 @@
-using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Jellyfin.Plugin.WizarrRequests;
 
@@ -24,7 +22,7 @@ public sealed class AccessRequest
     public string ReviewNote { get; set; } = "";
 }
 
-public sealed record ProfileInput(string Name, string Email, string Username, string Note, string Website = "");
+public sealed record ProfileInput(string Name, string Note, string Website = "");
 public sealed record SubmittedRequest(string Id, string Token);
 public sealed class RequestError(int status, string message) : Exception(message)
 {
@@ -63,12 +61,8 @@ public sealed class RequestStore
     public SubmittedRequest Submit(ProfileInput input, string address, DateTimeOffset now)
     {
         var name = (input.Name ?? "").Trim();
-        var email = (input.Email ?? "").Trim();
-        var username = (input.Username ?? "").Trim();
         var note = (input.Note ?? "").Trim();
         if (name.Length is < 1 or > 80 || name.Any(char.IsControl)) throw new RequestError(400, "Enter your name (up to 80 characters).");
-        if (email.Length > 254 || !MailAddress.TryCreate(email, out var parsed) || parsed.Address != email || email.Any(char.IsWhiteSpace)) throw new RequestError(400, "Enter a valid email address.");
-        if (!Regex.IsMatch(username, "^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$", RegexOptions.CultureInvariant)) throw new RequestError(400, "Choose a username with 3–32 letters, numbers, dots, underscores or hyphens.");
         if (note.Length is < 1 or > 600 || note.Any(c => char.IsControl(c) && c != '\n' && c != '\r' && c != '\t')) throw new RequestError(400, "Add a short note (up to 600 characters).");
         if (!string.IsNullOrEmpty(input.Website)) throw new RequestError(400, "Unable to submit this request.");
         lock (_gate)
@@ -78,10 +72,10 @@ public sealed class RequestStore
             if (requests.Count >= 5000) throw new RequestError(503, "Requests are temporarily unavailable. Please contact the server owner.");
             if (requests.Count(r => r.AddressHash == addressHash && r.Created > now.AddHours(-24)) >= 5 || requests.Count(r => r.Created > now.AddHours(-1)) >= 100)
                 throw new RequestError(429, "Too many requests. Please try again tomorrow or contact the server owner.");
-            if (requests.Any(r => r.Email.Equals(email, StringComparison.OrdinalIgnoreCase) && r.Created > now.AddHours(-24)))
-                throw new RequestError(429, "A request for this email was recently submitted. Use the private status link, or contact the server owner.");
+            if (requests.Any(r => r.AddressHash == addressHash && r.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && r.Note == note && r.Created > now.AddHours(-24)))
+                throw new RequestError(429, "This request was recently submitted. Use the private status link, or contact the server owner.");
             var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
-            var request = new AccessRequest { Id = Guid.NewGuid().ToString("N"), Name = name, Email = email, Username = username, Note = note, Created = now, TokenHash = Hash(token), AddressHash = addressHash };
+            var request = new AccessRequest { Id = Guid.NewGuid().ToString("N"), Name = name, Note = note, Created = now, TokenHash = Hash(token), AddressHash = addressHash };
             requests.Add(request);
             Save(requests);
             return new(request.Id, token);

@@ -6,7 +6,7 @@
   let step = 0;
   let privateRequest = null;
   let checking = false;
-  const fields = ['name', 'email', 'username', 'note', 'website'];
+  const fields = ['name', 'note', 'website'];
   const error = text => { $('message').textContent = text; $('message').hidden = !text; };
   async function api(path, options = {}) {
     const response = await fetch(root + path, { credentials: 'omit', cache: 'no-store', ...options });
@@ -17,11 +17,11 @@
   function showStep() {
     document.querySelectorAll('[data-step]').forEach(section => { section.hidden = Number(section.dataset.step) !== step; });
     $('previous').hidden = step === 0;
-    $('next').textContent = step === 2 ? 'Submit request' : 'Continue';
-    $('progress').textContent = `Step ${step + 1} of 3 · ${['Your profile', 'Your note', 'Review'][step]}`;
-    if (step === 2) {
+    $('next').textContent = step === 1 ? 'Submit request' : 'Continue';
+    $('progress').textContent = `Step ${step + 1} of 2 · ${['Your request', 'Review'][step]}`;
+    if (step === 1) {
       $('review').replaceChildren();
-      for (const [id, title] of [['name', 'Name'], ['email', 'Email'], ['username', 'Desired username'], ['note', 'Note']]) {
+      for (const [id, title] of [['name', 'Name'], ['note', 'Note']]) {
         const dt = document.createElement('dt'); dt.textContent = title;
         const dd = document.createElement('dd'); dd.textContent = $(id).value.trim();
         $('review').append(dt, dd);
@@ -37,7 +37,7 @@
     event.preventDefault(); error('');
     const current = document.querySelector(`[data-step="${step}"]`);
     for (const field of current.querySelectorAll('input,textarea')) if (!field.reportValidity()) return;
-    if (step < 2) { step++; showStep(); return; }
+    if (step < 1) { step++; showStep(); return; }
     $('next').disabled = true; $('previous').disabled = true; $('next').textContent = 'Submitting…';
     try {
       const profile = Object.fromEntries(fields.map(id => [id, $(id).value.trim()]));
@@ -63,7 +63,7 @@
       error('');
       const pending = ['pending', 'approving', 'review-required'].includes(data.status);
       $('status-heading').textContent = pending ? 'Waiting for approval' : data.status === 'approved' ? 'You’re approved' : 'Request declined';
-      $('status-copy').textContent = pending ? 'Your profile is waiting for the owner’s review. No account or access has been granted.' : data.status === 'approved' ? 'Your personal invitation is ready. Open Wizarr to confirm your username, choose a password, and finish setting up your account.' : 'The owner has declined this request. Contact them directly if you have questions.';
+      $('status-copy').textContent = pending ? 'Your request is waiting for the owner’s review. No account or access has been granted.' : data.status === 'approved' ? 'Your personal invitation is ready. Open Wizarr to confirm your username, choose a password, and finish setting up your account.' : 'The owner has declined this request. Contact them directly if you have questions.';
       $('finish').hidden = true;
       if (data.status === 'approved' && data.invitationUrl) {
         const url = new URL(data.invitationUrl);
