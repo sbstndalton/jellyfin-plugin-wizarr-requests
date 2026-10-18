@@ -135,3 +135,7 @@ Validation includes 43 .NET integration checks, 12 browser-protocol checks and 4
 For the provided adapter's default host-network setup, bind the upstream Seerr container's port 5055 to **127.0.0.1:5056**, and run the adapter on host port 5055. Mount its source read-only and run it with Node 22 or later. `SEERR_UPSTREAM` must be a loopback HTTP address; `PORT` defaults to 5055. Persist both the backend port binding and adapter service in your container manager. Keep the public Seerr URL pointed at the adapter. Remove the adapter and restore the original Seerr port binding to undo it.
 
 When updating the companion, deploy the versioned HTML and JavaScript together so cached older scripts cannot break the handoff. No Jellyfin access token or Quick Connect secret is transported in a URL by the current frame-based implementation. The normal HTTP adapter does not implement WebSocket upgrade forwarding; reconsider it if a future Seerr release needs that transport.
+
+### Optional download release check
+
+The separate [release guard](Companion/release-guard/README.md) checks Radarr/Sonarr torrent additions before forwarding them to qBittorrent. Movies need a confirmed past digital/disc release date, TV episodes need known past air dates, and both need a web/disc source classification. Unknown dates and metadata outages hold the download. Existing requests can remain monitored while waiting. It uses native APIs and does not require an upstream fork. See its README for installation, limitations, and synthetic tests.

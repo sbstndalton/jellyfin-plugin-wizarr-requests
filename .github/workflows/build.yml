@@ -19,6 +19,7 @@ jobs:
           node-version: '22'
       - run: node tests/handoff.test.mjs
       - run: node tests/adapter.test.mjs
+      - run: node --test Companion/release-guard/guard.test.cjs
       - name: Package plugin
         run: |
           mkdir -p dist
