@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.1.0.0",
+        "changelog": "Optional Seerr account cleanup on native Jellyfin user deletion, exact Jellyfin ID matching, owner protection and persistent retries. Seerr deletion also removes associated request records. Disabled until configured.",
+        "targetAbi": "12.2.0.0",
+        "sourceUrl": "https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases/download/v1.1.0-rc.1/Wizarr-Requests-1.1.0.0.zip",
+        "checksum": "aedc42e46a5b3a824a59e3f92531b73d",
+        "timestamp": "2026-10-18T19:30:00Z"
+      },
+      {
         "version": "1.0.1.0",
         "changelog": "Simpler name-and-note request form, two-step review, optional URL-encoded username prefill for compatible Wizarr installations. Existing requests and private status links are preserved. Wizarr email/password policies are managed separately.",
         "targetAbi": "12.2.0.0",

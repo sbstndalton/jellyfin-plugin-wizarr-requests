@@ -14,6 +14,9 @@ public sealed class PluginConfiguration
     public string WizarrPublicUrl { get; set; } = "https://invites.example.invalid";
     public string WizarrApiKey { get; set; } = "synthetic-integration-key";
     public bool PrefillUsername { get; set; }
+    public bool SeerrCleanupEnabled { get; set; }
+    public string SeerrApiUrl { get; set; } = "";
+    public string SeerrApiKey { get; set; } = "";
     public int ServerId { get; set; } = 7;
     public int[] LibraryIds { get; set; } = [4, 5];
 }

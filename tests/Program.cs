@@ -32,6 +32,15 @@ app.MapPost("/fake/api/invitations", async (HttpRequest request) => {
     if (remoteFailure) return Results.StatusCode(500);
     return Results.Json(new { invitation = new { code = "SYNTH12345", expires = "2026-10-25T12:00:00Z" } }, statusCode: 201);
 });
+var cleanupMode = "normal"; var seerrDeletes = 0; var seerrLookups = 0; var deletedSeerrId = 0;
+app.MapGet("/fake/api/v1/user/jellyfin/{id}", (string id, HttpRequest request) => {
+    if (request.Headers["X-Api-Key"] != "synthetic-seerr-key") return Results.Unauthorized();
+    seerrLookups++;
+    if (cleanupMode == "absent") return Results.NotFound();
+    if (cleanupMode == "failure") return Results.StatusCode(503);
+    return Results.Json(new { id = cleanupMode == "owner" ? 1 : 42, jellyfinUserId = cleanupMode == "mismatch" ? Guid.NewGuid().ToString("N") : id });
+});
+app.MapDelete("/fake/api/v1/user/{id:int}", (int id) => { seerrDeletes++; deletedSeerrId = id; return Results.Ok(); });
 await app.StartAsync();
 var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
 Plugin.Instance.Configuration.WizarrApiUrl = address + "/fake";
@@ -98,6 +107,34 @@ try
     Check(prefilledResult.GetProperty("invitationUrl").GetString()!.EndsWith("?username=Prefill%20Test"),"opt-in name prefill is URL encoded");
     File.WriteAllText(Path.Combine(directory,"requests.json"),"broken json");
     try { _=new RequestStore(directory); throw new Exception("Queue corruption silently accepted"); } catch(JsonException){Check(true,"corrupt queue fails closed");}
+    var cleanup = new SeerrCleanupStore(directory);
+    var processor = new SeerrCleanupProcessor(cleanup, new SeerrCleanupClient(), Microsoft.Extensions.Logging.Abstractions.NullLogger<SeerrCleanupProcessor>.Instance);
+    var config = Plugin.Instance.Configuration; config.SeerrApiUrl = address + "/fake"; config.SeerrApiKey = "synthetic-seerr-key";
+    var removed = Guid.NewGuid(); cleanup.Enqueue(removed); cleanup.Enqueue(removed);
+    Check(new SeerrCleanupStore(directory).List().Count == 1, "deleted-user queue persists and deduplicates events");
+    await processor.RunOnce(config, _ => false);
+    Check(seerrLookups == 0 && cleanup.List().Count == 1, "Seerr cleanup disabled by default");
+    config.SeerrCleanupEnabled = true;
+    await processor.RunOnce(config, _ => false);
+    Check(seerrDeletes == 1 && deletedSeerrId == 42 && cleanup.List().Count == 0, "deleted media identity removes exactly its matching Seerr account");
+    cleanupMode = "absent"; cleanup.Enqueue(Guid.NewGuid()); await processor.RunOnce(config, _ => false);
+    Check(seerrDeletes == 1 && cleanup.List().Count == 0, "missing Seerr account is an idempotent cleanup success");
+    cleanupMode = "owner"; var owner = Guid.NewGuid(); cleanup.Enqueue(owner); await processor.RunOnce(config, _ => false);
+    Check(seerrDeletes == 1 && cleanup.List().Single().State == "protected-owner", "Seerr owner account is never deleted");
+    cleanupMode = "mismatch"; var mismatch = Guid.NewGuid(); cleanup.Enqueue(mismatch); await processor.RunOnce(config, _ => false);
+    Check(seerrDeletes == 1 && cleanup.List().Single(j => j.UserId == mismatch).State == "identity-review", "mismatched media identity never triggers deletion");
+    cleanupMode = "normal"; var live = Guid.NewGuid(); cleanup.Enqueue(live); var calls = seerrLookups; await processor.RunOnce(config, _ => true);
+    Check(seerrLookups == calls && cleanup.List().Single(j => j.UserId == live).State == "live-user-review", "restored Jellyfin user blocks queued deletion");
+    cleanupMode = "failure"; var retry = Guid.NewGuid(); cleanup.Enqueue(retry); await processor.RunOnce(config, _ => false);
+    var pending = cleanup.List().Single(j => j.UserId == retry);
+    Check(pending.Attempts == 1 && pending.RetryAfter > DateTimeOffset.UtcNow && seerrDeletes == 1, "Seerr outage retains cleanup for retry");
+    calls = seerrLookups; await processor.RunOnce(config, _ => false);
+    Check(seerrLookups == calls, "cleanup retries respect backoff");
+    cleanup.Save(pending with { RetryAfter = null }); cleanupMode = "normal"; await processor.RunOnce(config, _ => false);
+    Check(seerrDeletes == 2 && cleanup.List().All(j => j.UserId != retry), "queued cleanup recovers after Seerr returns");
+    File.WriteAllText(Directory.GetFiles(Path.Combine(directory,"seerr-cleanup"),"*.json").First(), "corrupt");
+    calls = seerrLookups; await processor.RunOnce(config, _ => false);
+    Check(seerrLookups == calls, "corrupt cleanup queue fails closed before any remote deletion");
     Console.WriteLine($"{count} checks passed; all data and remote invitations synthetic.");
 }
 finally { await app.StopAsync(); await app.DisposeAsync(); Directory.Delete(directory,true); }

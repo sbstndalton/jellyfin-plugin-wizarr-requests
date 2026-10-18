@@ -34,7 +34,7 @@ Then install **Wizarr Requests** from the catalog, restart when playback is idle
 ### Manual installation
 
 1. Download the plugin ZIP from [Releases](https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases).
-2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.0.1.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
+2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.1.0.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
 3. Restart Jellyfin when nobody is playing media.
 4. Open **Dashboard → Plugins → Wizarr Requests** and expand **Connection settings**.
 5. Set your display name, internal Wizarr API URL, public HTTPS Wizarr URL, Wizarr API key, server ID and explicit comma-separated Wizarr library IDs. Wizarr’s authenticated `GET /api/servers` and `GET /api/libraries` endpoints provide those IDs.
@@ -74,6 +74,14 @@ Confirm the person’s identity before approving. No email address is requested.
 ### Helmarr
 
 Approved invitations are normal Wizarr invitations and can be managed through Helmarr’s Wizarr integration. **This plugin does not add its pending-request queue or approval buttons to Helmarr.** No supported extension/API for adding that interface was verified. It does not send fake movie requests or repurpose Seerr notifications.
+
+### Delete the linked Seerr account
+
+Version 1.1 adds optional cleanup when a Jellyfin profile is deleted, including deletion through Jellyfin's own dashboard. In the plugin's connection settings, enable **Delete the linked Seerr account**, then enter your Seerr/Jellyseerr API URL and API key. This option is off by default and works independently of accepting new access requests.
+
+The plugin records Jellyfin's user-deleted event and resolves the Seerr account by the exact Jellyfin user UUID. It never matches accounts by name or email. Cleanup runs in the background, normally within a few seconds. **Seerr's native account deletion also deletes that account's requests.** The Seerr owner (ID 1), mismatched identities, and Jellyfin accounts restored before cleanup are protected and require manual review.
+
+If Seerr is unavailable, cleanup remains in the plugin data folder's `seerr-cleanup` directory and retries with backoff, including after a Jellyfin restart. Review jobs with a state other than `pending` manually; logs record completion, retry, and protection events without API keys. A corrupt queue fails closed. Disabling cleanup pauses queued jobs; enabling it does not sweep or delete existing Seerr users. Back up this directory along with configuration. No accounts are deleted merely to test the connection.
 
 ## Privacy and failure handling
 

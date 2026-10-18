@@ -29,6 +29,9 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public string WizarrPublicUrl { get; set; } = "";
     public string WizarrApiKey { get; set; } = "";
     public bool PrefillUsername { get; set; }
+    public bool SeerrCleanupEnabled { get; set; }
+    public string SeerrApiUrl { get; set; } = "";
+    public string SeerrApiKey { get; set; } = "";
     public int ServerId { get; set; } = 1;
     public int[] LibraryIds { get; set; } = [];
 }
@@ -39,5 +42,10 @@ public sealed class ServiceRegistrator : IPluginServiceRegistrator
     {
         services.AddSingleton<RequestStore>(_ => new RequestStore(Plugin.Instance.DataFolderPath));
         services.AddSingleton<WizarrClient>();
+        services.AddSingleton(_ => new SeerrCleanupStore(Plugin.Instance.DataFolderPath));
+        services.AddSingleton<SeerrCleanupClient>();
+        services.AddSingleton<SeerrCleanupProcessor>();
+        services.AddScoped<MediaBrowser.Controller.Events.IEventConsumer<Jellyfin.Data.Events.Users.UserDeletedEventArgs>, UserDeletedConsumer>();
+        services.AddHostedService<SeerrCleanupWorker>();
     }
 }
