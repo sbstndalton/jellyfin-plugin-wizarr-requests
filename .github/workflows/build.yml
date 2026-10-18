@@ -18,11 +18,12 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/handoff.test.mjs
+      - run: node tests/adapter.test.mjs
       - name: Package plugin
         run: |
           mkdir -p dist
           cp bin/Release/net10.0/Jellyfin.Plugin.WizarrRequests.dll meta.json dist/
       - uses: actions/upload-artifact@v4
         with:
-          name: Wizarr-Requests-1.2.0.0
+          name: Wizarr-Requests-1.2.1.0
           path: dist/*

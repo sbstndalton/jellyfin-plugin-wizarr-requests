@@ -2,16 +2,18 @@
   'use strict';
   const status = document.getElementById('status');
   const manual = document.getElementById('manual');
-  const openerWindow = window.opener;
+  const embedded = window.parent !== window;
+  const openerWindow = embedded ? window.parent : window.opener;
   const fields = new URLSearchParams(location.hash.slice(1));
   const nonce = fields.get('nonce') || '';
   const value = fields.get('return') || '/';
   const dest = new URL(value, location.origin);
   const origin = window.WizarrJellyfinOrigin;
   let finished = false;
-  const fail = () => { finished = true; status.textContent = 'We couldn’t connect this profile. You can still sign in with Jellyfin.'; manual.hidden = false; };
-  if (!openerWindow || !/^[a-f0-9]{48}$/.test(nonce) || !origin || dest.origin !== location.origin || !value.startsWith('/') || value.startsWith('//')) { fail(); return; }
+  const fail = () => { if (embedded && openerWindow) openerWindow.postMessage({type:'wizarr-seerr-failed',nonce},origin); finished = true; status.textContent = 'We couldn’t connect this profile. You can still sign in with Jellyfin.'; manual.hidden = false; };
+  if (dest.origin !== location.origin || !value.startsWith('/') || value.startsWith('//')) { fail(); return; }
   history.replaceState(null, '', location.pathname); // Remove the non-secret handoff state immediately.
+  if (!openerWindow || !/^[a-f0-9]{48}$/.test(nonce) || !origin) { fail(); return; }
   const timer = setTimeout(fail, 45000);
   async function api(path, body) {
     const csrf = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='))?.slice(11);
@@ -27,8 +29,8 @@
     try {
       await api('jellyfin/quickconnect/authenticate', { secret });
       clearTimeout(timer);
-      window.opener = null;
-      location.replace(dest.href);
+      if (embedded) openerWindow.postMessage({ type: 'wizarr-seerr-complete', nonce }, origin);
+      else { window.opener = null; location.replace(dest.href); }
     } catch { clearTimeout(timer); fail(); }
   });
   let secret;

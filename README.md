@@ -34,7 +34,7 @@ Then install **Wizarr Requests** from the catalog, restart when playback is idle
 ### Manual installation
 
 1. Download the plugin ZIP from [Releases](https://github.com/sbstndalton/jellyfin-plugin-wizarr-requests/releases).
-2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.2.0.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
+2. Extract it into a new directory beneath Jellyfin’s `plugins` directory, for example `Wizarr Requests_1.2.1.0`. The directory should directly contain `Jellyfin.Plugin.WizarrRequests.dll` and `meta.json`.
 3. Restart Jellyfin when nobody is playing media.
 4. Open **Dashboard → Plugins → Wizarr Requests** and expand **Connection settings**.
 5. Set your display name, internal Wizarr API URL, public HTTPS Wizarr URL, Wizarr API key, server ID and explicit comma-separated Wizarr library IDs. Wizarr’s authenticated `GET /api/servers` and `GET /api/libraries` endpoints provide those IDs.
@@ -122,8 +122,16 @@ Install the files in `Companion/seerr-handoff/` as `/jellyfin-handoff/` on the *
 
 Enable Quick Connect in Jellyfin, install the compatible File Transformation plugin, then enable **Seerr link sign-in** and enter the public HTTPS Seerr URL in this plugin's settings. Restart Jellyfin after installing the plugin update; later setting changes take effect after a web refresh. The feature defaults off.
 
-An external Seerr link opens a new tab. That tab initiates native Quick Connect; the original Jellyfin tab authorizes the temporary code as the current signed-in profile. Seerr creates its regular session and opens the original destination. The exchange checks the exact site origin, tab, random nonce and unchanged Jellyfin identity. Native Seerr permissions and imported-user policies still apply. Internal Enhanced detail modals and already-handled links retain their existing behavior. Do not install another site's copy of the companion configuration.
+An ordinary external Seerr link signs in through a temporary hidden frame on the Seerr origin, then opens the destination in the current tab. Jellyfin authorizes native Quick Connect as the current profile, and Seerr creates its regular session. Explicit Ctrl/Cmd/Shift-click remains normal browser behavior. The exchange checks the exact site origin, tab, random nonce and unchanged Jellyfin identity. Native Seerr permissions and imported-user policies still apply. Internal Enhanced detail modals and already-handled links retain their existing behavior. Do not install another site's copy of the companion configuration.
 
-Keep the source Jellyfin tab open during sign-in. Browser popup/opener restrictions, a separate native client, or an independently hosted web shell can prevent the handoff; the companion offers ordinary sign-in on failure. This is a small plugin-and-static-page integration, not a promise of compatibility with every future server release.
+The background handoff requires compatible frame/cookie policies; the deployment verified here uses sibling subdomains on the same site. Different sites or restrictive third-party-cookie/frame policies can prevent it. A separate native client or independently hosted web shell may not load the plugin scripts. On failure, the source page offers ordinary Seerr navigation. This is a small plugin-and-static-page integration, not a promise of compatibility with every future server release.
 
-Validation includes 43 .NET integration checks, 10 browser-protocol checks, isolated native plugin/script loading and Seerr static-page hosting, and a desktop browser handoff through the native Quick Connect endpoint.
+Validation includes 43 .NET integration checks, 12 browser-protocol checks and 4 HTTP adapter checks, isolated native plugin/script loading and Seerr static-page hosting, and a desktop browser handoff through the native Quick Connect endpoint.
+
+### Seerr → Jellyfin in the current tab
+
+`Companion/seerr-handoff/same-tab.js` intercepts ordinary links to the exact Jellyfin origin configured in `config.js`. It leaves other destinations and explicit modifier-clicks alone. Load `config.js` then `same-tab.js` on Seerr pages through your reverse proxy, or use the optional small Node adapter in `Companion/seerr-adapter/adapter.cjs`. The adapter inserts those two static scripts into HTML; API and asset responses stream through unchanged. It requires no Seerr source changes or custom image.
+
+For the provided adapter's default host-network setup, bind the upstream Seerr container's port 5055 to **127.0.0.1:5056**, and run the adapter on host port 5055. Mount its source read-only and run it with Node 22 or later. `SEERR_UPSTREAM` must be a loopback HTTP address; `PORT` defaults to 5055. Persist both the backend port binding and adapter service in your container manager. Keep the public Seerr URL pointed at the adapter. Remove the adapter and restore the original Seerr port binding to undo it.
+
+When updating the companion, deploy the versioned HTML and JavaScript together so cached older scripts cannot break the handoff. No Jellyfin access token or Quick Connect secret is transported in a URL by the current frame-based implementation. The normal HTTP adapter does not implement WebSocket upgrade forwarding; reconsider it if a future Seerr release needs that transport.

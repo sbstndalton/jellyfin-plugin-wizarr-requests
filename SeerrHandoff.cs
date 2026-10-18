@@ -18,7 +18,7 @@ public static class SeerrHandoff
         var html = input.Contents;
         if (!Plugin.Instance.Configuration.SeerrHandoffEnabled || PublicUrl(Plugin.Instance.Configuration.SeerrPublicUrl) is null || html.Contains("data-wizarr-seerr-handoff")) return html;
         var end = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
-        return end < 0 ? html : html.Insert(end, "<script data-wizarr-seerr-handoff defer src=\"../WizarrRequests/seerr-handoff.js?v=1.2.0\"></script>");
+        return end < 0 ? html : html.Insert(end, "<script data-wizarr-seerr-handoff defer src=\"../WizarrRequests/seerr-handoff.js?v=1.2.1\"></script>");
     }
 }
 

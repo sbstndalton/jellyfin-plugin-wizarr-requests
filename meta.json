@@ -5,7 +5,7 @@
   "description": "Profile request wizard and administrator approval queue, with single-use Wizarr invitations after approval.",
   "overview": "Request access, review profiles, and approve Wizarr invitations.",
   "owner": "Sebastian",
-  "version": "1.2.0.0",
+  "version": "1.2.1.0",
   "targetAbi": "12.2.0.0",
   "timestamp": "2026-10-18T16:00:00Z",
   "status": "Active",
